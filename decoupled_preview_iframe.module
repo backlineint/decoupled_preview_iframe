@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Implements hooks for the decoupled_preview_iframe module.
+ */
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * {@inheritDoc}
+ */
+function decoupled_preview_iframe_node_view_alter(
+  array &$build, EntityInterface $entity,
+  EntityViewDisplayInterface $display
+) {
+  $config = \Drupal::config('decoupled_preview_iframe.settings');
+  $isBundleEnabled = boolval($config->get('node_types.' . $entity->bundle()));
+  $preview_url = $config->get('preview_url');
+  if ($isBundleEnabled && $preview_url) {
+    $current_path = \Drupal::service('path.current')->getPath();
+    $current_path_alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+
+    $node_token = '';
+    // If the draft provider is set to GraphQL Compose Preview, 
+    // we need to pass the preview token to the iframe.
+    if ($draft_provider = $config->get('draft.provider')) {
+      if ($draft_provider === 'graphql_compose_preview' && $node_preview = \Drupal::routeMatch()->getParameter('node_preview')) {
+        $node_token = "?token={$node_preview->preview_token->getString()}";
+      }
+    }
+    // @todo: Add support for other draft providers as JSON:API.
+
+    $build = [];
+    $build['iframe'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'iframe',
+      '#prefix' => '<div class="decoupled_preview_iframe-container">',
+      '#suffix' => '</div>',
+      '#attributes' => [
+        'src' => "{$preview_url}{$current_path_alias}{$node_token}",
+        'frameborder' => 0,
+        'scrolling' => FALSE,
+        'allowtransparency' => TRUE,
+        'width' => '100%',
+        'id' => 'node_preview',
+        'class' => ['decoupled_preview_iframe'],
+        'sandbox' => "allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-presentation allow-top-navigation",
+      ],
+      '#attached' => [
+        'library' => [
+          'decoupled_preview_iframe/site',
+        ],
+        'drupalSettings' => [
+          'decoupled_preview_iframe' => [
+            'node_view' => [
+              'selector' => 'iframe.decoupled_preview_iframe',
+              'node' => $entity->uuid(),
+              'src' => "{$preview_url}{$current_path_alias}",
+              'route_sync_type' => $config->get('route_sync.type'),
+            ],
+          ],
+        ],
+      ],
+    ];
+
+    $build['#cache']['max-age'] = 0;
+  }
+}
