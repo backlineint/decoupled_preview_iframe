@@ -7,6 +7,21 @@
 
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function decoupled_preview_iframe_form_node_preview_form_select_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $config = \Drupal::config('decoupled_preview_iframe.settings');
+  $routeName = \Drupal::routeMatch()->getRouteName();
+  $bundle = \Drupal::routeMatch()->getParameter('node_preview')->bundle();
+  $isBundleEnabled = boolval($config->get('node_types.' . $bundle));
+
+  if ($isBundleEnabled && $routeName === 'entity.node.preview') {
+    $form['view_mode']['#access'] = FALSE;
+  }
+}
 
 /**
  * {@inheritDoc}
