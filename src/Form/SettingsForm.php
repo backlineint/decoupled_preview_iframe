@@ -2,10 +2,12 @@
 
 namespace Drupal\decoupled_preview_iframe\Form;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * Configure Decoupled Preview Iframe Settings.
@@ -13,18 +15,43 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 class SettingsForm extends ConfigFormBase {
 
   /**
-   * Construct a new GraphQL Compose settings form.
+   * The entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  public function __construct(
-    protected EntityTypeManagerInterface $entityTypeManager,
-  ) {}
+  protected $entityTypeManager;
+
+  /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * Construct a new Decoupled preview settings form.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   Defines the configuration object factory.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   Manage drupal modules.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler) {
+    parent::__construct($config_factory);
+    $this->entityTypeManager = $entity_type_manager;
+    $this->moduleHandler = $module_handler;
+  }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('config.factory'),
       $container->get('entity_type.manager'),
+      $container->get('module_handler'),
     );
   }
 
@@ -46,7 +73,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $content_types = $this->getContenTypes();
+    $content_types = $this->getContentTypes();
 
     $form['node_types'] = [
       '#type' => 'fieldset',
@@ -97,9 +124,7 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('Route Sync Type'),
       '#default_value' => $route_sync_type != "" ? $route_sync_type : 'DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC',
       '#group' => 'route_sync',
-      '#description' => $this->t('Default: DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC' .
-        ', Remix: REMIX_DRUPAL_ROUTE_SYNC' .
-        ', Next.js: NEXT_DRUPAL_ROUTE_SYNC'),
+      '#description' => $this->t('DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC (default, Remix) or NEXT_DRUPAL_ROUTE_SYNC (Next.js)'),
     ];
 
     $form['draft'] = [
@@ -138,8 +163,8 @@ class SettingsForm extends ConfigFormBase {
       'graphql_compose_preview',
     ];
     foreach ($draft_providers_modules as $module) {
-      if (\Drupal::moduleHandler()->moduleExists($module)) {
-        $draft_providers[$module] = \Drupal::moduleHandler()->getName($module);
+      if ($this->moduleHandler->moduleExists($module)) {
+        $draft_providers[$module] = $this->moduleHandler->getName($module);
       }
     }
 
@@ -150,11 +175,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-    // echo var_dump($form_state->getValues());
-    // die(); 
-
-    $content_types = $this->getContenTypes();
+    $content_types = $this->getContentTypes();
     foreach ($content_types as [
       'field_name' => $field_name,
       'config_name' => $config_name,
@@ -180,9 +201,12 @@ class SettingsForm extends ConfigFormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Helper function to return an array of content types.
+   *
+   * @return array
+   *   An array of content type settings keyed by id.
    */
-  private function getContenTypes() {
+  private function getContentTypes() {
     $node_types = $this->entityTypeManager->getStorage('node_type')->loadMultiple();
     $content_types = [];
     foreach ($node_types as $node_type) {

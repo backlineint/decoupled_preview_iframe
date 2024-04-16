@@ -26,10 +26,7 @@ function decoupled_preview_iframe_form_node_preview_form_select_alter(&$form, Fo
 /**
  * {@inheritDoc}
  */
-function decoupled_preview_iframe_node_view_alter(
-  array &$build, EntityInterface $entity,
-  EntityViewDisplayInterface $display
-) {
+function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) {
   $config = \Drupal::config('decoupled_preview_iframe.settings');
   $isBundleEnabled = boolval($config->get('node_types.' . $entity->bundle()));
   $preview_url = $config->get('preview_url');
@@ -38,15 +35,14 @@ function decoupled_preview_iframe_node_view_alter(
     $current_path_alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
 
     $node_token = '';
-    // If the draft provider is set to GraphQL Compose Preview, 
-    // we need to pass the preview token to the iframe.
+    // If the draft provider is set to GraphQL Compose Preview, we need to pass
+    // the preview token to the iframe.
     if ($draft_provider = $config->get('draft.provider')) {
       if ($draft_provider === 'graphql_compose_preview' && $node_preview = \Drupal::routeMatch()->getParameter('node_preview')) {
         $node_token = "?token={$node_preview->preview_token->getString()}";
       }
     }
-    // @todo: Add support for other draft providers as JSON:API.
-
+    // @todo Add support for other draft providers as JSON:API.
     $build = [];
     $build['iframe'] = [
       '#type' => 'html_tag',
@@ -73,7 +69,7 @@ function decoupled_preview_iframe_node_view_alter(
               'selector' => 'iframe.decoupled_preview_iframe',
               'node' => $entity->uuid(),
               'src' => "{$preview_url}{$current_path_alias}",
-              'route_sync_type' => $config->get('route_sync.type'),
+              'routeSyncType' => $config->get('route_sync.type'),
             ],
           ],
         ],
