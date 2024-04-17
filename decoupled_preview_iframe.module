@@ -8,6 +8,7 @@
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_form_FORM_ID_alter().
@@ -24,7 +25,7 @@ function decoupled_preview_iframe_form_node_preview_form_select_alter(&$form, Fo
 }
 
 /**
- * {@inheritDoc}
+ * Implements hook_ENTITY_TYPE_view_alter().
  */
 function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) {
   $config = \Drupal::config('decoupled_preview_iframe.settings');
@@ -33,6 +34,21 @@ function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface
   if ($isBundleEnabled && $preview_url) {
     $current_path = \Drupal::service('path.current')->getPath();
     $current_path_alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+    $route_match = \Drupal::routeMatch();
+
+    // Latest version tab should be showing latest revision.
+    if ($route_match->getRouteName() === 'entity.node.latest_version') {
+      // Get the latest revision.
+      /** @var \Drupal\node\Entity\Node $latest_revision */
+      $latest_revision = $route_match->getParameter('node');
+
+      // Generate the URL for the revision view page.
+      $url = Url::fromRoute('entity.node.revision', [
+        'node' => $entity->id(),
+        'node_revision' => $latest_revision->getRevisionId(),
+      ]);
+      $current_path_alias = $url->toString();
+    }
 
     $node_token = '';
     // If the draft provider is set to GraphQL Compose Preview, we need to pass
