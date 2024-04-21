@@ -3,14 +3,18 @@
  * Site preview.
  */
 
-(function ($, window, Drupal, drupalSettings) {
+(function (window, Drupal, drupalSettings) {
   Drupal.behaviors.decoupledPreviewIframeLoad = {
     attach(context) {
-      const { selector } = drupalSettings.decoupled_preview_iframe.node_view;
-      const $iframe = $(selector, context);
+      const { selector } = drupalSettings.decoupled_preview_iframe;
+      const iframe = context.querySelector(selector);
 
-      $iframe.on('load', () => {
-        $iframe.addClass('ready');
+      if (!iframe) {
+        return;
+      }
+
+      iframe.addEventListener('load', () => {
+        iframe.classList.add('ready');
       });
     },
   };
@@ -21,7 +25,7 @@
         'message',
         (event) => {
           const { routeSyncType = 'DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC' } =
-            drupalSettings.decoupled_preview_iframe.node_view;
+            drupalSettings.decoupled_preview_iframe;
           const { data } = event;
 
           if (data.type !== routeSyncType || !data.path) {
@@ -36,4 +40,4 @@
       );
     },
   };
-})(jQuery, window, Drupal, drupalSettings);
+})(window, Drupal, drupalSettings);

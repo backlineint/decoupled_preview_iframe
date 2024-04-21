@@ -25,13 +25,25 @@ function decoupled_preview_iframe_form_node_preview_form_select_alter(&$form, Fo
 }
 
 /**
- * Implements hook_ENTITY_TYPE_view_alter().
+ * Implements hook_entity_view_alter().
  */
-function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) {
+function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) {
   $config = \Drupal::config('decoupled_preview_iframe.settings');
-  $isBundleEnabled = boolval($config->get('node_types.' . $entity->bundle()));
+  $preview_types = $config->get('preview_types');
+  $enabled_bundles = $preview_types[$entity->getEntityTypeId()] ?? [];
+  $isPreviewEnabled = in_array($entity->bundle(), $enabled_bundles);
+
+  if (!$isPreviewEnabled) {
+    return;
+  }
+  // Return early if anything other than default view mode.
+  $modes = ['default', 'full'];
+  if (!in_array($display->getMode(), $modes)) {
+    return;
+  }
+
   $preview_url = $config->get('preview_url');
-  if ($isBundleEnabled && $preview_url) {
+  if ($preview_url) {
     $current_path = \Drupal::service('path.current')->getPath();
     $current_path_alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
     $route_match = \Drupal::routeMatch();
@@ -53,7 +65,7 @@ function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface
     $node_token = '';
     // If the draft provider is set to GraphQL Compose Preview, we need to pass
     // the preview token to the iframe.
-    if ($draft_provider = $config->get('draft.provider')) {
+    if ($draft_provider = $config->get('draft_provider')) {
       if ($draft_provider === 'graphql_compose_preview' && $node_preview = \Drupal::routeMatch()->getParameter('node_preview')) {
         $node_token = "?token={$node_preview->preview_token->getString()}";
       }
@@ -81,12 +93,8 @@ function decoupled_preview_iframe_node_view_alter(array &$build, EntityInterface
         ],
         'drupalSettings' => [
           'decoupled_preview_iframe' => [
-            'node_view' => [
-              'selector' => 'iframe.decoupled_preview_iframe',
-              'node' => $entity->uuid(),
-              'src' => "{$preview_url}{$current_path_alias}",
-              'routeSyncType' => $config->get('route_sync.type'),
-            ],
+            'selector' => 'iframe.decoupled_preview_iframe',
+            'routeSyncType' => $config->get('route_sync'),
           ],
         ],
       ],
