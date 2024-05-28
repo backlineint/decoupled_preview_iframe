@@ -20,3 +20,18 @@
 .decoupled_preview_iframe.ready {  
   background-image: none;
 }
+
+.iframe_information {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.iframe_information div,
+.iframe_information label,
+.iframe_information a {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding-right: 10px;
+}

@@ -11,6 +11,21 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
 /**
+ * Implements hook_theme().
+ */
+function decoupled_preview_iframe_theme() {
+
+  return [
+    'preview_iframe' => [
+      'variables' => [
+        'url' => NULL,
+        'showPublishedToggle' => FALSE,
+      ],
+    ],
+  ];
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
 function decoupled_preview_iframe_form_node_preview_form_select_alter(&$form, FormStateInterface $form_state, $form_id) {
@@ -36,6 +51,7 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
   if (!$isPreviewEnabled) {
     return;
   }
+
   // Return early if anything other than default view mode.
   $modes = ['default', 'full'];
   if (!in_array($display->getMode(), $modes)) {
@@ -47,6 +63,12 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
     $current_path = \Drupal::service('path.current')->getPath();
     $current_path_alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
     $route_match = \Drupal::routeMatch();
+
+    $revisionRoutes = [
+      'entity.node.revision',
+      'entity.node.latest_version',
+    ];
+    $isRevisionRoute = in_array($route_match->getRouteName(), $revisionRoutes);
 
     // Latest version tab should be showing latest revision.
     if ($route_match->getRouteName() === 'entity.node.latest_version') {
@@ -65,28 +87,40 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
     $node_token = '';
     // If the draft provider is set to GraphQL Compose Preview, we need to pass
     // the preview token to the iframe.
+    // @todo Add support for other draft providers as JSON:API.
     if ($draft_provider = $config->get('draft_provider')) {
       if ($draft_provider === 'graphql_compose_preview' && $node_preview = \Drupal::routeMatch()->getParameter('node_preview')) {
         $node_token = "?token={$node_preview->preview_token->getString()}";
       }
     }
-    // @todo Add support for other draft providers as JSON:API.
+
+    // If the entity is not the latest revision, we need to get the latest
+    // revisionId to generate the preview URL and replace the current path.
+    $draft_path_alias = NULL;
+    if (!$isRevisionRoute && !$entity->isLatestRevision()) {
+      $revisionId = \Drupal::entityTypeManager()
+        ->getStorage('node')
+        ->getLatestRevisionId($entity->id());
+
+      // Generate the URL for the revision view page.
+      $url = Url::fromRoute('entity.node.revision', [
+        'node' => $entity->id(),
+        'node_revision' => $revisionId,
+      ]);
+
+      $draft_path_alias = $url->toString();
+    }
+
+    $preview_iframe_url = $draft_path_alias ?
+      "{$preview_url}{$draft_path_alias}{$node_token}" :
+      "{$preview_url}{$current_path_alias}{$node_token}";
+
+    // Generate the iframe.
     $build = [];
     $build['iframe'] = [
-      '#type' => 'html_tag',
-      '#tag' => 'iframe',
-      '#prefix' => '<div class="decoupled_preview_iframe-container">',
-      '#suffix' => '</div>',
-      '#attributes' => [
-        'src' => "{$preview_url}{$current_path_alias}{$node_token}",
-        'frameborder' => 0,
-        'scrolling' => FALSE,
-        'allowtransparency' => TRUE,
-        'width' => '100%',
-        'id' => 'node_preview',
-        'class' => ['decoupled_preview_iframe'],
-        'sandbox' => "allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-presentation allow-top-navigation",
-      ],
+      '#theme' => 'preview_iframe',
+      '#url' => $preview_iframe_url,
+      '#showPublishedToggle' => $draft_path_alias !== NULL,
       '#attached' => [
         'library' => [
           'decoupled_preview_iframe/site',
@@ -95,6 +129,8 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
           'decoupled_preview_iframe' => [
             'selector' => 'iframe.decoupled_preview_iframe',
             'routeSyncType' => $config->get('route_sync'),
+            'publishedUrl' => "{$preview_url}{$current_path_alias}{$node_token}",
+            'draftUrl' => "{$preview_url}{$draft_path_alias}{$node_token}",
           ],
         ],
       ],

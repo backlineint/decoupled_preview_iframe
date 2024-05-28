@@ -141,7 +141,7 @@ class SettingsForm extends ConfigFormBase {
 
     $form['draft_provider'] = [
       '#type' => 'select',
-      '#title' => 'Draft preview provider',
+      '#title' => 'Preview Provider',
       '#options' => $this->getDraftProviders(),
       '#default_value' => $config->get('draft_provider'),
       '#description' => $this->t('Select a provider to provide access to Node Draft data.<br /><br /><em>For GraphQL Compose: Install graphql_compose_preview module to support Draft Preview.</em>'),
