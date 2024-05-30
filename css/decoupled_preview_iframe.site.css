@@ -35,3 +35,11 @@
   margin: 0;
   padding-right: 10px;
 }
+
+.iframe_information a {
+  text-decoration: none;
+}
+
+.iframe_information a:hover {
+  text-decoration: dotted underline;
+}
