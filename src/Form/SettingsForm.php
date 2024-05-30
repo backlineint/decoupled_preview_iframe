@@ -136,7 +136,7 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Route Syncing'),
       '#default_value' => !empty($config->get('route_sync')) ? $config->get('route_sync') : 'DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC',
-      '#description' => $this->t('Sync route changes inside the iframe preview with your Drupal site.<br /><br /><em>DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC (default, Remix) or NEXT_DRUPAL_ROUTE_SYNC (Next.js)</em>'),
+      '#description' => $this->t('Sync route changes inside the iframe preview with your Drupal site.<br /><br /><em>DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC (default) or NEXT_DRUPAL_ROUTE_SYNC (if using Next.js module)</em>'),
     ];
 
     $form['draft_provider'] = [
