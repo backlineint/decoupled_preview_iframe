@@ -108,14 +108,44 @@ class SettingsForm extends ConfigFormBase {
     $types = $this->getPreviewTypeOptions();
     $default_types = $config->get('preview_types');
 
-    $form['preview_url'] = [
+    $form['redirect'] = [
+      '#type' => 'fieldset',
+      '#name' => 'redirect',
+    ];
+
+    $form['redirect']['redirect_anonymous'] = [
+      '#type' => 'checkbox',
+      '#default_value' => boolval($config->get('redirect_anonymous')),
+      '#title' => $this->t('Enable Anonymous redirects'),
+      '#group' => 'redirect',
+    ];
+
+    $form['redirect']['redirect_url'] = [
+      '#type' => 'url',
+      '#title' => $this->t('Redirect URL'),
+      '#description' => $this->t('Enter the URL for the frontend website: Example: <em>http://site.com</em>'),
+      '#default_value' => $config->get('redirect_url'),
+      '#states' => [
+        'visible' => [
+          ':input[name="redirect_anonymous"]' => ['checked' => TRUE],
+        ],
+      ],
+      '#group' => 'redirect',
+    ];
+
+    $form['preview'] = [
+      '#type' => 'fieldset',
+      '#name' => 'preview',
+    ];
+
+    $form['preview']['preview_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Preview URL'),
       '#description' => $this->t('Enter the preview URL for the frontend website: Example: <em>http://localhost:8080</em>'),
       '#default_value' => $config->get('preview_url'),
     ];
 
-    $form['preview_types'] = [
+    $form['preview']['preview_types'] = [
       '#type' => 'details',
       '#title' => $this->t('Preview enabled types'),
       '#description' => $this->t('Enable the decoupled preview iframe for the selected entity types.'),
@@ -123,8 +153,9 @@ class SettingsForm extends ConfigFormBase {
       '#open' => TRUE,
       '#tree' => TRUE,
     ];
+
     foreach ($types as $type_id => $type) {
-      $form['preview_types'][$type_id] = [
+      $form['preview']['preview_types'][$type_id] = [
         '#type' => 'checkboxes',
         '#title' => $this->t('@label', ['@label' => $type['label']]),
         '#options' => $type['bundles'],
@@ -132,14 +163,14 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
 
-    $form['route_sync'] = [
+    $form['preview']['route_sync'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Route Syncing'),
       '#default_value' => !empty($config->get('route_sync')) ? $config->get('route_sync') : 'DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC',
       '#description' => $this->t('Sync route changes inside the iframe preview with your Drupal site.<br /><br /><em>DECOUPLED_PREVIEW_IFRAME_ROUTE_SYNC (default) or NEXT_DRUPAL_ROUTE_SYNC (if using Next.js module)</em>'),
     ];
 
-    $form['draft_provider'] = [
+    $form['preview']['draft_provider'] = [
       '#type' => 'select',
       '#title' => 'Preview Provider',
       '#options' => $this->getDraftProviders(),
@@ -187,10 +218,12 @@ class SettingsForm extends ConfigFormBase {
     }
 
     $config
-      ->set('route_sync', $form_state->getValue('route_sync'))
+      ->set('redirect_anonymous', boolval($form_state->getValue('redirect_anonymous')))
+      ->set('redirect_url', $form_state->getValue('redirect_url'))
       ->set('preview_url', $form_state->getValue('preview_url'))
-      ->set('draft_provider', $form_state->getValue('draft_provider'))
       ->set('preview_types', $preview_types)
+      ->set('route_sync', $form_state->getValue('route_sync'))
+      ->set('draft_provider', $form_state->getValue('draft_provider'))
       ->save();
   }
 
@@ -206,6 +239,9 @@ class SettingsForm extends ConfigFormBase {
   private function getPreviewTypeOptions(): array {
     $types = [];
     foreach ($this->supportedEntityTypes() as $entity_type) {
+      if ($entity_type === 'media') {
+        continue;
+      }
       $definition = $this->entityTypeManager->getDefinition($entity_type);
       if ($bundle_entity_type = $definition->getBundleEntityType()) {
         $bundles = $this->entityTypeManager->getStorage($bundle_entity_type)->loadMultiple();

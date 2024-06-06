@@ -1,13 +1,13 @@
 decoupled_preview_iframe.settings:
   type: config_object
-  label: 'Decoupled preview iframe settings'
+  label: 'Decoupled Preview Iframe settings'
   mapping:
-    route_sync:
-      type: string
-      label: 'Route syncing'
-    draft_provider:
-      type: string
-      label: 'Draft provider'
+    redirect_anonymous:
+      type: boolean
+      label: 'Enable Anonymous redirects'
+    redirect_url:
+      type: uri
+      label: 'Redirect URL'
     preview_url:
       type: uri
       label: 'Preview URL'
@@ -17,6 +17,12 @@ decoupled_preview_iframe.settings:
       sequence:
         type: preview_type.[%key]
         label: 'Entity type'
+    route_sync:
+      type: string
+      label: 'Route syncing'
+    draft_provider:
+      type: string
+      label: 'Draft provider'
 
 preview_type.*:
   type: sequence
