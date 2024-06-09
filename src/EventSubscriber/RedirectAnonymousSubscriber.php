@@ -207,7 +207,7 @@ class RedirectAnonymousSubscriber implements EventSubscriberInterface {
   /**
    * {@inheritDoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::REQUEST][] = ['redirect', 30];
 
     return $events;
