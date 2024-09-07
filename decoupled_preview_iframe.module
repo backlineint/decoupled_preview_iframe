@@ -8,7 +8,21 @@
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
+
+/**
+ * Implements hook_help().
+ */
+function decoupled_preview_iframe_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.decoupled_preview_iframe':
+      return '<p>' . t('Help text for the decoupled_preview_iframe module.') . '</p>';
+
+    default:
+      return '';
+  }
+}
 
 /**
  * Implements hook_theme().
