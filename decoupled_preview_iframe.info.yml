@@ -3,3 +3,4 @@ description: Preview Drupal content from your decoupled front-end site, extendin
 type: module
 core_version_requirement: ^10 || ^11
 package: Decoupled
+configure: decoupled_preview_iframe.settings
