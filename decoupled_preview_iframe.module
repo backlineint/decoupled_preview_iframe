@@ -119,6 +119,7 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
     $build = [];
     $build['#node'] = $entity;
     $build['#entity_type'] = 'node';
+    $build['#view_mode'] = $display->getMode();
     $build['iframe'] = [
       '#theme' => 'preview_iframe',
       '#url' => $preview_iframe_url,
