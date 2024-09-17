@@ -193,6 +193,7 @@ class SettingsForm extends ConfigFormBase {
     ];
     $draft_providers_modules = [
       'graphql_compose_preview',
+      'jsonapi_preview_provider',
     ];
     foreach ($draft_providers_modules as $module) {
       if ($this->moduleHandler->moduleExists($module)) {

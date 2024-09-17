@@ -106,6 +106,13 @@ function decoupled_preview_iframe_entity_view_alter(array &$build, EntityInterfa
       if ($draft_provider === 'graphql_compose_preview' && $node_preview = \Drupal::routeMatch()->getParameter('node_preview')) {
         $node_token = "?token={$node_preview->preview_token->getString()}";
       }
+      if ($draft_provider === 'jsonapi_preview_provider') {
+        $query = \Drupal::request()->query;
+        if ($query->has('preview_token')) {
+          // TODO - get this data without using the query string
+          $node_token = "?token={$query->get('preview_token')}";
+        }
+      }
     }
 
     // If the entity is not the latest revision, we need to get the latest
